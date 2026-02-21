@@ -1,0 +1,32 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔍 正在檢查程式碼格式與風格..."
+
+# 暫時關閉 exit-on-error，才能捕獲失敗並顯示自訂錯誤訊息
+set +e
+
+# 1) 全專案檢查：確保即使沒有 stage .js 也會跑
+npm run format:check
+format_status=$?
+npm run lint
+lint_status=$?
+
+# 2) 對已 staged 的 .js 再跑一次（lint-staged）
+npx lint-staged
+staged_status=$?
+
+set -e
+
+# 任一失敗就擋下 commit
+if [ "$format_status" -ne 0 ] || [ "$lint_status" -ne 0 ] || [ "$staged_status" -ne 0 ]; then
+  echo "" >&2
+  echo "❌ 檢查失敗！請在 commit 前修復以上錯誤。" >&2
+  echo "💡 提示：你可以嘗試執行以下指令自動修復大部分問題：" >&2
+  echo "   npm run format:fix" >&2
+  echo "   npm run lint:fix" >&2
+  echo "" >&2
+  exit 1
+fi
+
+echo "✅ 檢查通過，準備提交！"
